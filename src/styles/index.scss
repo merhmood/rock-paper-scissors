@@ -105,6 +105,7 @@ header {
     justify-content: center;
     margin-left: 18px;
     & .game-board_bets {
+      cursor: pointer;
       box-sizing: border-box;
       width: 165px;
       height: 128px;

@@ -54,7 +54,23 @@ function App() {
   const objectToList = (object: object) => Object.entries(object);
 
   const handleBetPlacing = (gameBet: { title: string; amount: number }) => {
-    if (indicators.balance > 0) {
+    if (
+      betPositions.includes(gameBet.title.toLocaleLowerCase()) ||
+      betPositions.length <= 1
+    ) {
+      setbetPositions((prevState) => {
+        if (
+          !prevState.includes(gameBet.title.toLocaleLowerCase()) &&
+          prevState.length <= 2
+        )
+          return [...prevState, gameBet.title.toLocaleLowerCase()];
+        else return [...prevState];
+      });
+    }
+    if (
+      indicators.balance > 0 &&
+      betPositions.includes(gameBet.title.toLocaleLowerCase())
+    ) {
       // Place bet in choice
       setGameBets((prevState: any) => ({
         ...prevState,
@@ -70,21 +86,69 @@ function App() {
         balance: prevState.balance - BET_INCREMENT,
       }));
     }
-    console.log(betPositions);
-    if (
-      betPositions.includes(gameBet.title.toLocaleLowerCase()) ||
-      betPositions.length <= 2
-    ) {
-      setbetPositions((prevState) => {
-        if (
-          !prevState.includes(gameBet.title.toLocaleLowerCase()) &&
-          prevState.length <= 2
-        )
-          return [...prevState, gameBet.title.toLocaleLowerCase()];
-        else return [...prevState];
-      });
+  };
+
+  const getWinnerHandler = () => {
+    let winingPositions = [];
+    let winingAmount = 0;
+    const computerChoice = getComputerChoice();
+
+    for (const betPosition of betPositions) {
+      if (
+        betPosition.toLocaleUpperCase() === "PAPER" &&
+        computerChoice === "ROCK"
+      ) {
+        winingPositions.push("player");
+        winingAmount = gameBets["paper"].amount;
+      } else if (
+        computerChoice === "PAPER" &&
+        betPosition.toLocaleUpperCase() === "ROCK"
+      ) {
+        winingPositions.push("computer");
+      } else if (
+        betPosition.toLocaleUpperCase() === "ROCK" &&
+        computerChoice === "SCISSORS"
+      ) {
+        winingPositions.push("player");
+        winingAmount = gameBets["rock"].amount;
+      } else if (
+        computerChoice === "ROCK" &&
+        betPosition.toLocaleUpperCase() === "SCISSORS"
+      ) {
+        winingPositions.push("computer");
+      } else if (
+        betPosition.toLocaleUpperCase() === "SCISSORS" &&
+        computerChoice === "PAPER"
+      ) {
+        winingPositions.push("player");
+        winingAmount = gameBets["scissors"].amount;
+      } else if (
+        computerChoice === "SCISSORS" &&
+        betPosition.toLocaleUpperCase() === "PAPER"
+      ) {
+        winingPositions.push("computer");
+      }
+    }
+    for (const winingPosition of winingPositions) {
+      if (winingPosition === "player" && winingPositions.length < 2) {
+        setIndicators((prevState) => ({
+          ...prevState,
+          balance: prevState.balance + 14 * winingAmount,
+        }));
+      } else if (winingPosition === "player" && winingPositions.length >= 2) {
+        setIndicators((prevState) => ({
+          ...prevState,
+          balance: prevState.balance + 3 * winingAmount,
+        }));
+      }
     }
   };
+
+  function getComputerChoice(): string {
+    const numbers = ["ROCK", "PAPER", "SCISSORS"];
+    const randomIndex = Math.floor(Math.random() * numbers.length);
+    return numbers[randomIndex];
+  }
 
   return (
     <main>
@@ -131,6 +195,7 @@ function App() {
             ))
           }
         </div>
+        <p onClick={getWinnerHandler}>play</p>
         {changeControlButton(gamePlayed)}
       </section>
     </main>
