@@ -1,35 +1,83 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+enum GameChoices {
+  ROCK = "ROCK",
+  PAPER = "PAPER",
+  SCISSORS = "SCISSORS",
 }
 
-export default App
+function App() {
+  const indicators = {
+    balance: 5000,
+    bet: 0,
+    win: 0,
+  };
+
+  const gameBets = {
+    rock: { title: GameChoices.ROCK, amount: 0 },
+    paper: { title: GameChoices.PAPER, amount: 500 },
+    scissors: { title: GameChoices.SCISSORS, amount: 0 },
+  };
+
+  const gamePlayed = false;
+
+  const playerWon = false;
+
+  const choices = {
+    player: GameChoices.PAPER,
+    computer: GameChoices.SCISSORS,
+  };
+
+  const objectToList = (object: object) => Object.entries(object);
+
+  return (
+    <main>
+      <header id="header">
+        {
+          // Displays the values for balance, bet and win
+          objectToList(indicators).map(([indicator, value], index) => (
+            <div className="item" key={index}>
+              <h2 className="indicator">{indicator.toLocaleUpperCase()}: </h2>
+              <p className="value">{value}</p>
+            </div>
+          ))
+        }
+      </header>
+      <section className="game-outcome">
+        {playerWon && (
+          <div className="player-won">
+            <p>PAPER WON</p>
+            <p>
+              YOU WIN <span>5000</span>
+            </p>
+          </div>
+        )}
+      </section>
+      <section className="game-choices">
+        {choices.computer && choices.player && (
+          <div className="choices">
+            <p>{choices.computer}</p>
+            <span>VS</span>
+            <p>{choices.player}</p>
+          </div>
+        )}
+      </section>
+      <section className="game-board">
+        <p className="game-board_title">PICK YOUR POSITIONS</p>
+        <div className="game-board_pieces">
+          {objectToList(gameBets).map(([gameBet, value], index) => (
+            <div className={`game-board_bets ${gameBet}`} key={index}>
+              <p>{value.amount}</p>
+              <h2>{value.title}</h2>
+            </div>
+          ))}
+        </div>
+        {gamePlayed ? (
+          <button className="game-control">CLEAR</button>
+        ) : (
+          <button className="game-control">PLAY</button>
+        )}
+      </section>
+    </main>
+  );
+}
+
+export default App;
