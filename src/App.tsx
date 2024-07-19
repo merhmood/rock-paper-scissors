@@ -1,7 +1,15 @@
+import GameOutcomeFactory from "./components/GameOutcomeFactory";
+
 enum GameChoices {
   ROCK = "ROCK",
   PAPER = "PAPER",
   SCISSORS = "SCISSORS",
+}
+
+enum GameOutcome {
+  WON = "WON",
+  LOST = "LOST",
+  DRAW = "DRAW",
 }
 
 function App() {
@@ -19,12 +27,14 @@ function App() {
 
   const gamePlayed = false;
 
-  const playerWon = false;
+  const gameOutcome = GameOutcome.WON;
 
   const choices = {
     player: GameChoices.PAPER,
     computer: GameChoices.SCISSORS,
   };
+
+  const wonChoice = GameChoices.PAPER;
 
   const objectToList = (object: object) => Object.entries(object);
 
@@ -42,14 +52,8 @@ function App() {
         }
       </header>
       <section className="game-outcome">
-        {playerWon && (
-          <div className="player-won">
-            <p>PAPER WON</p>
-            <p>
-              YOU WIN <span>5000</span>
-            </p>
-          </div>
-        )}
+        {gameOutcome === "WON" &&
+          GameOutcomeFactory.createGameOutcomeComponent("WON", wonChoice)}
       </section>
       <section className="game-choices">
         {choices.computer && choices.player && (
