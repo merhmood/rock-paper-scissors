@@ -1,86 +1,52 @@
-/**
- * Welcome the ROCK PAPER SCISSORS game
- * - To place bet click on the box showing bet value.
- * - Bet can only be a multiple of 500
- */
+import { useEffect, useState } from "react";
+import BettingPanel from "./components/BettingPanel";
+import GameChoicesDisplay from "./components/GameChoicesDisplay";
+import Header from "./components/Header";
+import { GameChoices, BET_INCREMENT, INITIAL_BALANCE } from "./constants";
+import { Bet, Indicators } from "./types";
+import { getComputerChoice, calculateWinnings } from "./utils";
 
-import { useState } from "react";
-import GameOutcomeFactory from "./components/factories/GameOutcomeFactory";
-import {
-  ClearGameControlButton,
-  PlayGameControlButton,
-} from "./components/HOC/withGameControl";
-
-enum GameChoices {
-  ROCK = "ROCK",
-  PAPER = "PAPER",
-  SCISSORS = "SCISSORS",
-}
-
-enum GameOutcome {
-  WON = "WON",
-  LOST = "LOST",
-  DRAW = "DRAW",
-}
-
-const BET_INCREMENT = 500;
-
-function App() {
-  const [indicators, setIndicators] = useState({
-    balance: 5000,
+const App = () => {
+  const [indicators, setIndicators] = useState<Indicators>({
+    balance: INITIAL_BALANCE,
     bet: 0,
     win: 0,
   });
 
-  const [gameBets, setGameBets] = useState({
+  const [gameBets, setGameBets] = useState<Record<string, Bet>>({
     rock: { title: GameChoices.ROCK, amount: 0 },
     paper: { title: GameChoices.PAPER, amount: 0 },
     scissors: { title: GameChoices.SCISSORS, amount: 0 },
   });
 
-  const [betPositions, setbetPositions] = useState<Array<string>>([]);
+  const [betPositions, setBetPositions] = useState<string[]>([]);
+  const [gamePlayed, setGamePlayed] = useState(false);
+  const [invalidBet, setInvalidBet] = useState(false);
 
-  const gamePlayed = false;
+  useEffect(() => {
+    const totalBet = Object.values(gameBets).reduce(
+      (sum, bet) => sum + bet.amount,
+      0
+    );
+    setInvalidBet(indicators.balance < totalBet);
+  }, [indicators.balance, gameBets]);
 
-  const gameOutcome = "LOST";
-
-  const choices = {
-    player: null,
-    computer: null,
-  };
-
-  const wonChoice = GameChoices.PAPER;
-
-  const objectToList = (object: object) => Object.entries(object);
-
-  const handleBetPlacing = (gameBet: { title: string; amount: number }) => {
-    if (
-      betPositions.includes(gameBet.title.toLocaleLowerCase()) ||
-      betPositions.length <= 1
-    ) {
-      setbetPositions((prevState) => {
-        if (
-          !prevState.includes(gameBet.title.toLocaleLowerCase()) &&
-          prevState.length <= 2
-        )
-          return [...prevState, gameBet.title.toLocaleLowerCase()];
-        else return [...prevState];
+  const handleBetPlacing = (gameBet: Bet) => {
+    if (betPositions.length < 2 && indicators.balance >= BET_INCREMENT) {
+      setBetPositions((prevState) => {
+        if (!prevState.includes(gameBet.title.toLowerCase())) {
+          return [...prevState, gameBet.title.toLowerCase()];
+        }
+        return prevState;
       });
-    }
-    if (
-      indicators.balance > 0 &&
-      betPositions.includes(gameBet.title.toLocaleLowerCase())
-    ) {
-      // Place bet in choice
-      setGameBets((prevState: any) => ({
+
+      setGameBets((prevState) => ({
         ...prevState,
-        [gameBet.title.toLocaleLowerCase()]: {
-          title: prevState[gameBet.title.toLocaleLowerCase()].title,
-          amount:
-            prevState[gameBet.title.toLocaleLowerCase()].amount + BET_INCREMENT,
+        [gameBet.title.toLowerCase()]: {
+          title: prevState[gameBet.title.toLowerCase()].title,
+          amount: prevState[gameBet.title.toLowerCase()].amount + BET_INCREMENT,
         },
       }));
-      // Reduce player balance
       setIndicators((prevState) => ({
         ...prevState,
         balance: prevState.balance - BET_INCREMENT,
@@ -89,120 +55,59 @@ function App() {
   };
 
   const getWinnerHandler = () => {
-    let winingPositions = [];
-    let winingAmount = 0;
     const computerChoice = getComputerChoice();
+    const { newBalance, newWins } = calculateWinnings(
+      betPositions,
+      gameBets,
+      computerChoice,
+      indicators.balance
+    );
 
-    for (const betPosition of betPositions) {
-      if (
-        betPosition.toLocaleUpperCase() === "PAPER" &&
-        computerChoice === "ROCK"
-      ) {
-        winingPositions.push("player");
-        winingAmount = gameBets["paper"].amount;
-      } else if (
-        computerChoice === "PAPER" &&
-        betPosition.toLocaleUpperCase() === "ROCK"
-      ) {
-        winingPositions.push("computer");
-      } else if (
-        betPosition.toLocaleUpperCase() === "ROCK" &&
-        computerChoice === "SCISSORS"
-      ) {
-        winingPositions.push("player");
-        winingAmount = gameBets["rock"].amount;
-      } else if (
-        computerChoice === "ROCK" &&
-        betPosition.toLocaleUpperCase() === "SCISSORS"
-      ) {
-        winingPositions.push("computer");
-      } else if (
-        betPosition.toLocaleUpperCase() === "SCISSORS" &&
-        computerChoice === "PAPER"
-      ) {
-        winingPositions.push("player");
-        winingAmount = gameBets["scissors"].amount;
-      } else if (
-        computerChoice === "SCISSORS" &&
-        betPosition.toLocaleUpperCase() === "PAPER"
-      ) {
-        winingPositions.push("computer");
-      }
-    }
-    for (const winingPosition of winingPositions) {
-      if (winingPosition === "player" && winingPositions.length < 2) {
-        setIndicators((prevState) => ({
-          ...prevState,
-          balance: prevState.balance + 14 * winingAmount,
-        }));
-      } else if (winingPosition === "player" && winingPositions.length >= 2) {
-        setIndicators((prevState) => ({
-          ...prevState,
-          balance: prevState.balance + 3 * winingAmount,
-        }));
-      }
-    }
+    setIndicators((prevState) => ({
+      ...prevState,
+      balance: newBalance,
+      win: prevState.win + newWins,
+      bet: prevState.bet + 1,
+    }));
+
+    setGamePlayed(true);
   };
 
-  function getComputerChoice(): string {
-    const numbers = ["ROCK", "PAPER", "SCISSORS"];
-    const randomIndex = Math.floor(Math.random() * numbers.length);
-    return numbers[randomIndex];
-  }
+  const resetGame = () => {
+    setGamePlayed(false);
+    setBetPositions([]);
+    setGameBets({
+      rock: { title: GameChoices.ROCK, amount: 0 },
+      paper: { title: GameChoices.PAPER, amount: 0 },
+      scissors: { title: GameChoices.SCISSORS, amount: 0 },
+    });
+  };
 
   return (
     <main>
-      <header id="header">
-        {
-          // Displays the values for balance, bet and win
-          objectToList(indicators).map(([indicator, value], index) => (
-            <div className="item" key={index}>
-              <h2 className="indicator">{indicator.toLocaleUpperCase()}: </h2>
-              <p className="value">{value}</p>
-            </div>
-          ))
-        }
-      </header>
-      <section className="game-outcome">
-        {gameOutcome === GameOutcome.WON &&
-          GameOutcomeFactory.createGameOutcomeComponent("WON", wonChoice)}
-      </section>
+      <Header indicators={indicators} />
       <section className="game-choices">
-        {choices.computer && choices.player && (
-          <div className="choices">
-            <p>{choices.computer}</p>
-            <span>VS</span>
-            <p>{choices.player}</p>
-          </div>
+        {gamePlayed && (
+          <GameChoicesDisplay
+            computerChoice={getComputerChoice()}
+            betPositions={betPositions}
+          />
         )}
       </section>
       <section className="game-board">
         <p className="game-board_title">PICK YOUR POSITIONS</p>
-        <div className="game-board_pieces">
-          {
-            // gameBet represents possible betting position
-            objectToList(gameBets).map(([gameBet, value], index) => (
-              <div
-                className={`game-board_bets ${gameBet}`}
-                key={index}
-                onClick={() =>
-                  handleBetPlacing({ title: value.title, amount: value.amount })
-                }
-              >
-                <p>{value.amount}</p>
-                <h2>{value.title}</h2>
-              </div>
-            ))
-          }
-        </div>
-        <p onClick={getWinnerHandler}>play</p>
-        {changeControlButton(gamePlayed)}
+        <BettingPanel gameBets={gameBets} handleBetPlacing={handleBetPlacing} />
+        <button
+          className="game-control"
+          onClick={gamePlayed ? resetGame : getWinnerHandler}
+          disabled={invalidBet}
+          style={{ opacity: invalidBet ? 0.5 : 1 }}
+        >
+          {gamePlayed ? "CLEAR" : "PLAY"}
+        </button>
       </section>
     </main>
   );
-}
-
-const changeControlButton = (gamePlayed: boolean) =>
-  gamePlayed ? <ClearGameControlButton /> : <PlayGameControlButton />;
+};
 
 export default App;

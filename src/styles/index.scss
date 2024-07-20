@@ -151,6 +151,7 @@ header {
     }
   }
   & .game-control {
+    cursor: pointer;
     display: block;
     background-color: #070707;
     border: 2px solid $primary-color;
